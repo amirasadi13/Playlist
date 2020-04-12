@@ -12,6 +12,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
@@ -21,11 +23,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.example.playlisttest.databinding.FragmentMusicListBinding;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.snackbar.SnackbarContentLayout;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +49,7 @@ public class MusicListFragment extends Fragment implements CustomAdapter.dataLis
     List<Songs> songsList = new ArrayList<>();
     Songs songs;
     MediaPlayer mediaPlayer;
-
+    String search;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -68,8 +77,34 @@ public class MusicListFragment extends Fragment implements CustomAdapter.dataLis
         customAdapter = new CustomAdapter(songsList, getContext(), this);
         binding.recycleView.setAdapter(customAdapter);
 
+        setHasOptionsMenu(true);
+        ((AppCompatActivity)getActivity()).setSupportActionBar(binding.toolbar);
+
         return binding.getRoot();
     }
+
+    @Override
+    public void onCreateOptionsMenu(
+             Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.list_menu,menu);
+        super.onCreateOptionsMenu(menu, inflater);
+        MenuItem searchItem = menu.findItem(R.id.menu_search);
+        SearchView searchView = (SearchView) searchItem.getActionView();
+        searchView.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                customAdapter.getFilter().filter(newText);
+                return false;
+            }
+        });
+    }
+    
 
     public void doStuff() {
 
@@ -120,9 +155,24 @@ public class MusicListFragment extends Fragment implements CustomAdapter.dataLis
 
         binding.tvSongTitle.setText(title);
         binding.tvSongName.setText(name);
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer = MediaPlayer.create(getContext(), Uri.parse(path));
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(getContext(), Uri.parse(path));
+        } else {
+            try {
+                mediaPlayer.reset();
+                mediaPlayer.setDataSource(getContext(), Uri.parse(path));
+                mediaPlayer.prepare();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         mediaPlayer.start();
+        binding.btnStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mediaPlayer.pause();
+            }
+        });
     }
 }
 

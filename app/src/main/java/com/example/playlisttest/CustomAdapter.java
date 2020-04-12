@@ -1,31 +1,26 @@
 package com.example.playlisttest;
-
 import android.content.Context;
-import android.content.Intent;
-import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
-import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHolder> {
+public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHolder> implements Filterable {
 
-public interface dataListener{
+    public interface dataListener{
     void onClickListener(String title,String name ,String path );
 }
     List<Songs> songsList;
+    final List<Songs> songsListAll;
     Context context;
-    MediaPlayer mediaPlayer;
     dataListener listener;
 
 
@@ -33,6 +28,7 @@ public interface dataListener{
         this.songsList = songsList;
         this.context = context;
         listener = fragment;
+        songsListAll = songsList;
     }
 
     @NonNull
@@ -89,5 +85,36 @@ public interface dataListener{
             tvPlay = itemView.findViewById(R.id.tv_play);
         }
     }
+    @Override
+    public Filter getFilter() {
+    return songSFilter;
+    }
+    private Filter songSFilter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            List<Songs> filterList = new ArrayList<>();
+            if (constraint == null || constraint.length() == 0){
+                filterList.addAll(songsListAll);
+            }else {
+                String filterPattern = constraint.toString().toLowerCase().trim();
 
+                for (Songs item : songsList){
+                    if (item.getTitle().toLowerCase().contains(filterPattern)){
+                        filterList.add(item);
+                    }
+                }
+            }
+
+            FilterResults results =new FilterResults();
+            results.values = filterList;
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+                songsList.clear();
+                songsList.addAll((List) results.values);
+                notifyDataSetChanged();
+        }
+    };
 }
